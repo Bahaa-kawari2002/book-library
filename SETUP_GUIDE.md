@@ -238,7 +238,7 @@ The new `Dockerfile` uses a multi-stage build:
 Or change the port in docker-compose.yml:
 ```yaml
 ports:
-  - "5001:5000"  # Change host port to 5001
+  - "5000:5000"  # Change host port to 5001
 ```
 
 ### Docker Build Fails
@@ -375,16 +375,6 @@ chmod +x run.sh               # Make script executable
 5. ✅ Test all features
 6. ✅ Take screenshots
 7. ✅ Submit assignment
-
----
-
-**Default Admin Account:**
-```
-Email: admin@luminabooks.com
-Password: Admin@123
-```
-
-**Remember**: Change these credentials in production!
 
 ---
 
