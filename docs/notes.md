@@ -1,59 +1,65 @@
-# Lumina Book Hub - Technical Notes
+# Lumina Book Hub - Project Notes & Troubleshooting Log
 
-## Project Overview
-Lumina Book Hub is a full-stack Book Library Management System built for an OS Lab assignment. The application features user authentication, book management with admin approval workflow, rating system, and Dark/Light mode theming.
-
-## Tech Stack
-- **Frontend**: React.js 18 with Vite, Tailwind CSS
-- **Backend**: Node.js with Express.js
-- **Database**: MongoDB Atlas (Cloud)
-- **Containerization**: Docker with multi-stage builds (Single Root Dockerfile)
-- **CI/CD**: GitHub Actions
+This document records the technical challenges encountered during the development of Lumina Book Hub and the specific solutions implemented to resolve them.
 
 ---
 
-## Technical Challenges & Solutions
+## 🛠️ Critical Technical Challenges & Solutions
 
-### 1. Docker Port Conflicts (Port 5000 vs AirPlay)
-**Problem**: The user required the backend to run on Port 5000. However, on macOS, Port 5000 is reserved by the AirPlay Receiver service, causing `bind: address already in use` errors.
-**Solution**: 
-- Documented the conflict in `docs/ENV_SETUP.md`.
-- instructed the user to disable AirPlay Receiver in System Settings > General > AirDrop & Handoff.
-- Configured `docker-compose.yml` to map `5000:5000` assuming the port is free.
+### 1. The "Port 5000" Conflict (macOS)
+**🔴 Problem:** 
+The application failed to start on macOS with `Error: listen EADDRINUSE: address already in use :::5000`.
+**🔍 Root Cause:** 
+On macOS Monterey and later, the "AirPlay Receiver" feature automatically listens on Port 5000, blocking our backend server.
+**✅ Solution:**
+1.  **Instruction**: We instructed the user to disable AirPlay Receiver (`System Settings > General > AirDrop & Handoff > AirPlay Receiver`).
+2.  **Configuration**: We kept the port mapping as `5000:5000` in `docker-compose.yml` but added specific warnings in documentation.
+3.  *Alternative Attempted*: We briefly tried mapping `5001:5000`, but the user requested to stick to Port 5000 standard.
 
-### 2. "concurrently" Module Not Found in Docker
-**Problem**: The initial Dockerfile used `npm install -g concurrently` but the `CMD` failed with `sh: concurrently: not found`. This was likely due to PATH issues in the Alpine image or shell context.
-**Solution**:
-- Switched to **local installation**: `npm install concurrently serve` in the production stage.
-- Updated `CMD` to use `npx`: `CMD ["npx", "concurrently", ...]`
-- This ensures the binary is reliably found in `node_modules/.bin`.
+### 2. CORS (Cross-Origin Resource Sharing) Errors
+**🔴 Problem:** 
+The frontend (React) running on Port 3000 could not communicate with the backend on Port 5000, receiving `403 Forbidden` or Network Errors.
+**🔍 Root Cause:** 
+Browsers block cross-origin requests by default. The backend was not configured to accept requests from the frontend's origin (`http://localhost:3000`).
+**✅ Solution:**
+1.  Installed `cors` package: `npm install cors`.
+2.  Updated `server.js` to use the middleware globally:
+    ```javascript
+    const cors = require('cors');
+    app.use(cors()); // Allow all origins (or granularly configure for production)
+    ```
 
-### 3. Dockerfile Consolidation
-**Requirement**: The project initially had separate Dockerfiles for frontend and backend. The user requested a single Dockerfile in the root directory.
-**Solution**:
-- Created a unified `Dockerfile` in the root.
-- It copies both `backend/` and `frontend/` directories.
-- Uses a multi-stage process to build the frontend.
-- Runs both services using `concurrently` in the final container.
+### 3. Docker "Module Not Found: concurrently"
+**🔴 Problem:** 
+The Docker container kept crashing with `sh: concurrently: not found` or `Error: Cannot find module '/app/concurrently'`.
+**🔍 Root Cause:** 
+We initially used `npm install -g concurrently` (global install) in the Alpine Linux container. The global bin path was not correctly in the shell's `$PATH` for the `CMD` instruction, or `npm install` wasn't persisting correctly in the final stage.
+**✅ Solution:**
+1.  **Local Install**: Switched to installing utilities locally in the project directory: `npm install concurrently serve`.
+2.  **Use NPX**: Updated the Dockerfile `CMD` to execute via `npx`, which robustly locates binaries in `node_modules/.bin`:
+    ```dockerfile
+    CMD ["npx", "concurrently", "\"cd backend && node server.js\"", "\"npx serve ...\""]
+    ```
+
+### 4. Redundant Docker Configuration
+**🔴 Problem:** 
+The project had multiple `Dockerfile`s (`/backend/Dockerfile`, `/frontend/Dockerfile`, and `/Dockerfile`), causing confusion on which one was the source of truth.
+**✅ Solution:**
+1.  **Consolidation**: Deleted the sub-directory Dockerfiles.
+2.  **Root Dockerfile**: Created a single "Multi-Service" Dockerfile in the root that handles the build process for both frontend and backend using multi-stage builds.
+
+### 5. Docker Networking & Host Access
+**🔴 Problem:** 
+Frontend trying to access `http://localhost:5000`. Inside a URL container, "localhost" refers to the container itself, not the host machine or other containers.
+**✅ Solution:**
+1.  **Browser Context**: Since React runs in the *user's browser*, `localhost:5000` IS correct for API calls (as long as port 5000 is mapped to the host).
+2.  **Environment Variable**: We ensured `vite.config.js` and `axios.js` use `import.meta.env.VITE_API_URL` which defaults to `http://localhost:5000/api`.
 
 ---
 
-## Bonus Features Implemented
+## 🚀 Key Features Implemented
 
-### Bonus A: Docker Compose
-orchestrates the application with `docker-compose.yml`.
-
-### Bonus B: CI Pipeline
-Added `.github/workflows/ci.yml` which triggers a Docker build on every push and pull request to `main`. This ensures code integration stability.
-
-### Bonus C: Multi-stage Build
-The root `Dockerfile` uses multi-stage builds:
-1. **base**: Installs dependencies.
-2. **build**: Builds the React frontend.
-3. **production**: Lightweight final image serving the app.
-
-### Bonus D: Health Checks
-Added `HEALTHCHECK` instructions in the Dockerfile to periodically ping the `/api/health` endpoint, ensuring the backend is responsive.
-
-### Bonus E: Makefile
-Created a `Makefile` to abstract complex Docker commands into simple shortcuts like `make build`, `make run`, and `make logs`.
+- **Single Command Start**: `make all` (or `docker-compose up --build`) starts everything.
+- **Health Checks**: Backend automatically reports its health status to Docker.
+- **CI/CD**: GitHub Actions pipeline ensures the build never breaks.
+- **Unified Infrastructure**: Simpler project structure with everything managed from the root level.
