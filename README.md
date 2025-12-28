@@ -104,56 +104,54 @@ Book Library is a comprehensive Book Library Management System that allows users
 book-library/
 ├── backend/                 # Node.js backend
 │   ├── models/             # Mongoose models
-│   │   ├── User.js
-│   │   └── Book.js
 │   ├── routes/             # API routes
-│   │   ├── auth.js
-│   │   └── books.js
 │   ├── middleware/         # Custom middleware
-│   │   └── auth.js
 │   ├── server.js           # Entry point
-│   ├── package.json
-│   ├── Dockerfile          # Backend Dockerfile
-│   └── .env.example        # Environment template
+│   └── package.json
 │
 ├── frontend/               # React frontend
-│   ├── src/
-│   │   ├── components/    # React components
-│   │   │   └── Navbar.jsx
-│   │   ├── pages/         # Page components
-│   │   │   ├── Home.jsx
-│   │   │   ├── Login.jsx
-│   │   │   ├── Register.jsx
-│   │   │   ├── UploadBook.jsx
-│   │   │   ├── BookDetails.jsx
-│   │   │   └── AdminPanel.jsx
-│   │   ├── context/       # React Context
-│   │   │   ├── AuthContext.jsx
-│   │   │   └── ThemeContext.jsx
-│   │   ├── api/           # API configuration
-│   │   │   └── axios.js
-│   │   ├── App.jsx        # Main component
-│   │   ├── main.jsx       # Entry point
-│   │   └── index.css      # Global styles
-│   ├── public/
+│   ├── src/                # Source code
+│   ├── public/             
 │   ├── index.html
 │   ├── package.json
-│   ├── Dockerfile          # Multi-stage frontend Dockerfile
-│   ├── nginx.conf          # Nginx configuration
 │   ├── vite.config.js
-│   ├── tailwind.config.js
-│   └── .env.example
+│   └── tailwind.config.js
 │
-├── docs/
-│   ├── notes.md            # Technical documentation
-│   └── screenshots/        # Application screenshots
+├── docs/                   # Documentation
+│   ├── notes.md            # Technical notes
+│   └── ENV_SETUP.md        # Environment setup guide
 │
+├── .github/                # GitHub Configurations
+│   └── workflows/          # CI Workflows
+│       └── ci.yml          # Docker Build CI
+│
+├── Dockerfile              # Root Multi-service Dockerfile
 ├── docker-compose.yml      # Docker orchestration
+├── Makefile                # Command shortcuts
 ├── .dockerignore
 ├── .gitignore
-├── .env.example            # Root env template
 └── README.md
 ```
+
+## 🏆 Bonus Features Implemented
+
+### ✅ Bonus A - Docker Compose
+Orchestrates frontend and backend services with custom bridge network and health checks.
+
+### ✅ Bonus B - CI/CD Pipeline
+GitHub Actions workflow (`.github/workflows/ci.yml`) automatically builds the Docker image on push and PR to ensure build stability.
+
+### ✅ Bonus C - Multi-stage Build
+Root `Dockerfile` uses multi-stage builds to optimize the final image size (frontend served via simplified static file serving).
+
+### ✅ Bonus D - Health Checks
+Implemented `HEALTHCHECK` in Dockerfile to ensure backend availability before traffic is routed.
+
+### ✅ Bonus E - Makefile
+Simplified command interface for common operations (build, run, clean, logs).
+
+### ✅ Bonus G - Pull Request Workflow
+Feature branch development workflow used for implementing infrastructure bonuses.
 
 ---
 
@@ -211,64 +209,41 @@ npm run dev
 
 ## 🐳 Docker Deployment
 
-### Prerequisites
-- Docker Desktop installed
-- Docker Compose installed
+### Quick Start (Using Makefile)
 
-### Quick Start with Docker
+We have included a `Makefile` to simplify common Docker operations.
 
-#### 1. Configure Environment
 ```bash
-# Copy the example environment file
-cp .env.example .env
+# Build and Run (Detached)
+make all
 
-# Edit .env and add your credentials
-nano .env
+# View Logs
+make logs
+
+# Stop and Clean
+make clean
 ```
 
-Add your MongoDB URI and JWT secret:
-```env
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/lumina-book-hub
-JWT_SECRET=your_secure_secret_key_here
-```
+### Manual Docker Commands
 
-#### 2. Build and Run
+If you prefer standard Docker Compose commands:
+
 ```bash
-# Build and start all services
-docker-compose up --build
+# Build and Run
+docker-compose up --build -d
 
-# Or run in detached mode
-docker-compose up -d
-```
-
-#### 3. Access the Application
-- **Frontend**: http://localhost
-- **Backend API**: http://localhost:5000
-
-#### 4. Stop Services
-```bash
+# Stop
 docker-compose down
-```
 
-### Docker Commands
-
-```bash
-# View logs
+# View Logs
 docker-compose logs -f
-
-# View specific service logs
-docker-compose logs -f frontend
-docker-compose logs -f backend
-
-# Rebuild specific service
-docker-compose build frontend
-
-# Restart services
-docker-compose restart
-
-# Remove containers and volumes
-docker-compose down -v
 ```
+
+### Configuration
+Ensure your `.env` file is set up correctly as described in `docs/ENV_SETUP.md`.
+
+> [!IMPORTANT]
+> **macOS Users**: If you are using Port 5000, ensure AirPlay Receiver is disabled in System Settings. See [Environment Setup](docs/ENV_SETUP.md) for details.
 
 ### Multi-stage Build Details (Bonus C)
 
@@ -467,20 +442,7 @@ git commit -m "docs: Update API documentation"
 
 ---
 
-## 🏆 Bonus Features Implemented
 
-### ✅ Bonus A - Docker Compose
-Implemented complete docker-compose.yml file that orchestrates both frontend and backend services with:
-- Custom bridge network for inter-service communication
-- Environment variable configuration
-- Automatic service dependency management
-- Health checks and restart policies
-
-### ✅ Bonus C - Multi-stage Build
-Frontend Dockerfile uses multi-stage build:
-- **Build stage**: Compiles React application
-- **Production stage**: Serves with Nginx
-- **Result**: 98% reduction in final image size
 
 ---
 
