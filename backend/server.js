@@ -74,6 +74,11 @@ app.use((err, req, res, next) => {
     });
 });
 
+// Welcome route
+app.get('/', (req, res) => {
+    res.send('Welcome to Lumina Book Hub Backend Service');
+});
+
 // 404 handler
 app.use((req, res) => {
     res.status(404).json({
